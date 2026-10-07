@@ -9,13 +9,13 @@ Chogathon build. The Chog Genesis NFT is the save file.
 ## Run
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 Connect a Monad wallet. Enter a token id you own. Possess writes a 24h run onto that id. Challenge adds a scar. Transfer the NFT and the next owner inherits the same id state.
 
-Session scars are local for the hackathon demo. Next step is a small contract so scars follow the token on-chain.
+Demo on lets you click the loop without holding a Chog. Leave it off for the real gate.
 
 ## Submission line
 
