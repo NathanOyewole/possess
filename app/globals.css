@@ -1,0 +1,52 @@
+:root {
+  --bg: #0b0614;
+  --card: #140c22;
+  --line: #2a1c44;
+  --text: #f4eefc;
+  --mute: #a394b8;
+  --accent: #a78bfa;
+  --hot: #f0abfc;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+}
+button, input { font: inherit; color: inherit; }
+a { color: var(--accent); }
+
+.wrap { max-width: 880px; margin: 0 auto; padding: 28px 20px 80px; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.mark { display: flex; align-items: center; gap: 10px; letter-spacing: 0.18em; font-size: 13px; }
+.dot {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: linear-gradient(135deg, #7c3aed, #f0abfc);
+}
+h1 { font-size: clamp(40px, 8vw, 72px); line-height: 0.9; margin: 36px 0 12px; letter-spacing: -0.04em; }
+.lede { color: var(--mute); max-width: 52ch; font-size: 16px; line-height: 1.5; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+button, .ghost {
+  border: 1px solid var(--line); background: #1c1230; border-radius: 12px;
+  padding: 12px 16px; cursor: pointer;
+}
+button.primary { background: #7c3aed; border-color: #7c3aed; color: white; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+input {
+  background: #100818; border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px 14px; width: 140px;
+}
+.grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 14px; margin-top: 28px; }
+@media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; }
+.kicker { color: var(--accent); font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+.stat { background: #0d0816; border-radius: 12px; padding: 10px; }
+.stat b { display: block; font-size: 22px; }
+.stat span { color: var(--mute); font-size: 12px; }
+.scar { border-top: 1px solid var(--line); padding: 10px 0; color: var(--mute); font-size: 14px; }
+.err { color: #fda4af; font-size: 14px; }
+.fine { color: var(--mute); font-size: 12px; line-height: 1.5; }
+.board { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.pill { display: flex; justify-content: space-between; gap: 8px; background: #0d0816; border-radius: 12px; padding: 10px 12px; font-size: 14px; }
