@@ -34,11 +34,13 @@ h1 { font-size: clamp(42px, 8vw, 76px); line-height: 0.88; letter-spacing: -0.04
 .body, .panel { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 16px; }
 .face {
   min-height: 280px; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; justify-content: flex-end;
+  background-size: cover; background-position: center;
   background:
     radial-gradient(circle at 70% 30%, #f0abfc 0 18px, transparent 19px),
     radial-gradient(circle at 30% 40%, #7c3aed 0 70px, transparent 71px),
     linear-gradient(160deg, #24143d, #0c0814 70%);
 }
+.face[style] { background-color: #120d1c; }
 .face span { color: var(--mute); font-size: 13px; }
 .face strong { font-size: 32px; letter-spacing: -0.04em; }
 .face em { color: var(--mute); font-style: normal; }

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { CHOG_NFT, CHOG_TOKEN, MONAD, SUPPLY, RUN_MS, archetype, stats } from "@/lib/chain";
-import { chogBalance, connectMonad, ownerOf, short } from "@/lib/eth";
+import { chogBalance, connectMonad, ownerOf, short, tokenMeta } from "@/lib/eth";
 import { loadRuns, upsert, type Run } from "@/lib/runs";
 
 export default function Page() {
@@ -15,6 +15,7 @@ export default function Page() {
   const [runs, setRuns] = useState<Run[]>([]);
   const [now, setNow] = useState(Date.now());
   const [demo, setDemo] = useState(false);
+  const [meta, setMeta] = useState<{ name: string; image: string } | null>(null);
 
   const id = Number(tokenId);
   const valid = Number.isInteger(id) && id >= 0 && id < SUPPLY;
@@ -34,7 +35,9 @@ export default function Page() {
   useEffect(() => {
     if (!valid) return;
     setOwner(null);
+    setMeta(null);
     ownerOf(CHOG_NFT, id).then(setOwner).catch((e) => setError(e.message));
+    tokenMeta(CHOG_NFT, id).then(setMeta).catch(() => setMeta(null));
   }, [id, valid]);
 
   const clock = useMemo(() => {
@@ -106,9 +109,9 @@ export default function Page() {
 
       <section className="stage">
         <article className="body">
-          <div className="face" data-arch={face?.name || "none"}>
+          <div className="face" data-arch={face?.name || "none"} style={meta?.image ? { backgroundImage: `url(${meta.image})` } : undefined}>
             <span>{valid ? `#${id}` : "—"}</span>
-            <strong>{face?.name || "No body"}</strong>
+            <strong>{meta?.name || face?.name || "No body"}</strong>
             <em>{face?.line || "Ids run 0–1968"}</em>
           </div>
           <div className="stats">

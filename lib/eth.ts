@@ -20,6 +20,30 @@ export async function ownerOf(contract: string, tokenId: number) {
   return "0x" + result.slice(-40);
 }
 
+function hexToUtf8(hex: string) {
+  const clean = hex.replace(/^0x/, "");
+  let out = "";
+  for (let i = 0; i < clean.length; i += 2) {
+    const code = parseInt(clean.slice(i, i + 2), 16);
+    if (code) out += String.fromCharCode(code);
+  }
+  return out;
+}
+
+export async function tokenMeta(contract: string, tokenId: number) {
+  const data = "0xc87b56dd" + pad32(tokenId.toString(16));
+  const result = await rpc("eth_call", [{ to: contract, data }, "latest"]);
+  if (!result || result === "0x") return null;
+  const raw = hexToUtf8(result);
+  const uri = raw.includes("ipfs://") || raw.includes("http") ? raw.slice(raw.search(/ipfs:\/\/|https?:\/\//)) : raw;
+  const url = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const json = await res.json();
+  const image = String(json.image || "").replace("ipfs://", "https://ipfs.io/ipfs/");
+  return { name: json.name as string, image, traits: (json.attributes || []) as { trait_type: string; value: string }[] };
+}
+
 export async function chogBalance(token: string, account: string) {
   const data = "0x70a08231" + pad32(account.slice(2));
   const result = await rpc("eth_call", [{ to: token, data }, "latest"]);
