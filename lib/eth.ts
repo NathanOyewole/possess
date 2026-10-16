@@ -63,24 +63,34 @@ export function getEthereum(): Ethereum | null {
 export async function connectMonad() {
   const eth = getEthereum();
   if (!eth) throw new Error("No wallet. Install Rabby, MetaMask, or Phantom.");
-  const accounts = (await eth.request({ method: "eth_requestAccounts" })) as string[];
-  const chainId = (await eth.request({ method: "eth_chainId" })) as string;
+  let accounts = (await eth.request({ method: "eth_requestAccounts" })) as string[];
+  if (!accounts?.length) throw new Error("Wallet connected but no account. Unlock it and try again.");
+  let chainId = (await eth.request({ method: "eth_chainId" })) as string;
   if (chainId !== "0x8f") {
-    await eth.request({
-      method: "wallet_switchEthereumChain",
-      params: [{ chainId: "0x8f" }],
-    }).catch(async () => {
-      await eth.request({
-        method: "wallet_addEthereumChain",
-        params: [{
-          chainId: "0x8f",
-          chainName: "Monad",
-          nativeCurrency: { name: "MON", symbol: "MON", decimals: 18 },
-          rpcUrls: ["https://rpc.monad.xyz"],
-          blockExplorerUrls: ["https://monadscan.com"],
-        }],
-      });
-    });
+    try {
+      await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x8f" }] });
+    } catch (err) {
+      const code = (err as { code?: number }).code;
+      if (code === 4902) {
+        await eth.request({
+          method: "wallet_addEthereumChain",
+          params: [{
+            chainId: "0x8f",
+            chainName: "Monad",
+            nativeCurrency: { name: "MON", symbol: "MON", decimals: 18 },
+            rpcUrls: ["https://rpc.monad.xyz"],
+            blockExplorerUrls: ["https://monadscan.com"],
+          }],
+        });
+      } else if (code === 4001) {
+        throw new Error("You rejected the Monad switch.");
+      } else {
+        throw err;
+      }
+    }
+    chainId = (await eth.request({ method: "eth_chainId" })) as string;
+    if (chainId !== "0x8f") throw new Error("Still not on Monad. Switch the network in your wallet.");
+    accounts = (await eth.request({ method: "eth_accounts" })) as string[];
   }
   return accounts[0];
 }
