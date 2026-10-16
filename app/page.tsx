@@ -124,9 +124,9 @@ export default function Page() {
             <b>{owner ? short(owner) : valid ? "reading…" : "—"}</b>
           </div>
           <p className={owns ? "ok" : "lock"}>
-            {owns ? "You hold this body." : demo ? "Demo only. Real Possess stays locked without the NFT." : "You do not hold this body."}
+            {owns ? "You hold this body. Possess to start a 24h run." : demo ? "Demo only. Turn it off to see the real lock." : "You do not hold this body. Possess stays locked."}
           </p>
-          {run && <p className="clock">{run.alive && left > 0 ? `${clock} · heat ${run.heat}` : "Run dead. Revive costs $CHOG."}</p>}
+          {run && <p className="clock">{run.alive && left > 0 ? `${clock} left · heat ${run.heat}` : "Run dead. A $CHOG revive comes next."}</p>}
           <div className="scars">
             {(run?.scars || []).map((s) => <div key={s.at}>{s.note}<span>{short(s.by)}</span></div>)}
           </div>
@@ -135,9 +135,12 @@ export default function Page() {
         <aside className="panel">
           <label>Token id</label>
           <input value={tokenId} inputMode="numeric" onChange={(e) => setTokenId(e.target.value.replace(/\D/g, "").slice(0, 4))} />
-          <button className="primary block" disabled={!canPossess} onClick={possess}>Possess</button>
+          <button className="primary block" disabled={!canPossess} onClick={possess}>
+            {owns ? "Possess" : demo ? "Possess (demo)" : "Need this Chog"}
+          </button>
           <button className="block" disabled={!run?.alive || left <= 0} onClick={challenge}>Challenge</button>
           {error && <p className="err">{error}</p>}
+          <p className="hint">Type any id. The card loads that Chog. Possess only unlocks if you own it.</p>
           <div className="meta">
             <span>$CHOG {balance}</span>
             <span>{MONAD.name} {MONAD.id}</span>
