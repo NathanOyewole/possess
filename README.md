@@ -1,10 +1,22 @@
 # POSSESS
 
-Chogathon build. The Chog Genesis NFT is the save file.
+Chogathon. The Chog Genesis NFT is the save file.
 
-- Collection: `0xc96d31f8626c6d03fae5dcd3d61e3fb9f4a73763` (Chog Genesis, Monad, 1969)
+https://usepossess.vercel.app
+
+## What it does
+
+Type a token id. The card loads that Chog. Stats are seeded from the id. Possess starts a 24h run. Challenge writes a scar. Sell the NFT and the next owner inherits the same id. No Chog, no character.
+
+## Why the NFT is essential
+
+`ownerOf` on Chog Genesis is the gate. Remove the NFT and Possess stays locked. The run is keyed to the token id, not the wallet.
+
+## Contracts
+
+- Chog Genesis: `0xc96d31f8626c6d03fae5dcd3d61e3fb9f4a73763`
 - $CHOG: `0x350035555E10d9AfAF1566AaebfCeD5BA6C27777`
-- Chain id: 143
+- Possess (deploy): `contracts/Possess.sol` on Monad, chain id 143
 
 ## Run
 
@@ -12,8 +24,6 @@ Chogathon build. The Chog Genesis NFT is the save file.
 pnpm install
 pnpm dev
 ```
-
-Connect a Monad wallet. Enter a token id you own. Possess writes a 24h run onto that id. Challenge adds a scar. Transfer the NFT and the next owner inherits the same id state.
 
 Demo on lets you click the loop without holding a Chog. Leave it off for the real gate.
 
