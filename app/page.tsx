@@ -52,7 +52,7 @@ export default function Page() {
       const addr = await connectMonad();
       setAccount(addr);
       const bal = await chogBalance(CHOG_TOKEN, addr);
-      setBalance((Number(bal / 10n ** 15n) / 1000).toFixed(2));
+      setBalance((Number(bal / BigInt(1e15)) / 1000).toFixed(2));
     } catch (e) {
       setError(e instanceof Error ? e.message : "connect failed");
     } finally {
