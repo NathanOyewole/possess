@@ -107,6 +107,12 @@ export default function Page() {
         <p className="lede">Token id seeds the body. Scars stick to that id. Sell it and the next owner inherits the run.</p>
       </section>
 
+      <section className="steps">
+        <div><b>1</b><span>Connect on Monad</span></div>
+        <div><b>2</b><span>Type a Chog id you own</span></div>
+        <div><b>3</b><span>Possess starts the 24h run. Challenge writes a scar.</span></div>
+      </section>
+
       <section className="stage">
         <article className="body">
           <div className="face" data-arch={face?.name || "none"} style={meta?.image ? { backgroundImage: `url(${meta.image})` } : undefined}>

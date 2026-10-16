@@ -33,8 +33,12 @@ button.block { width: 100%; margin-top: 8px; }
 .kicker { color: var(--accent); letter-spacing: 0.16em; text-transform: uppercase; font-size: 12px; margin: 0; }
 h1 { font-size: clamp(42px, 8vw, 76px); line-height: 0.88; letter-spacing: -0.045em; margin: 10px 0; max-width: 9ch; }
 .lede { color: var(--mute); max-width: 46ch; line-height: 1.5; }
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+.steps div { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: flex; gap: 10px; align-items: center; }
+.steps b { width: 22px; height: 22px; border-radius: 99px; background: #7c3aed; display: grid; place-items: center; font-size: 12px; flex: none; }
+.steps span { color: var(--mute); font-size: 13px; line-height: 1.35; }
 .stage { display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 14px; }
-@media (max-width: 800px) { .stage { grid-template-columns: 1fr; } }
+@media (max-width: 800px) { .stage, .steps { grid-template-columns: 1fr; } }
 .body, .panel { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 16px; animation: rise 0.6s 0.1s ease both; }
 .face {
   min-height: 280px; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; justify-content: flex-end;
