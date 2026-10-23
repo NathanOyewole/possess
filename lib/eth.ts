@@ -1,9 +1,11 @@
+import { MONAD } from "./chain";
+
 export function pad32(hex: string) {
   return hex.replace(/^0x/, "").padStart(64, "0");
 }
 
 export async function rpc(method: string, params: unknown[]) {
-  const res = await fetch("https://rpc.monad.xyz", {
+  const res = await fetch(MONAD.rpc, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
@@ -66,30 +68,30 @@ export async function connectMonad() {
   let accounts = (await eth.request({ method: "eth_requestAccounts" })) as string[];
   if (!accounts?.length) throw new Error("Wallet connected but no account. Unlock it and try again.");
   let chainId = (await eth.request({ method: "eth_chainId" })) as string;
-  if (chainId !== "0x8f") {
+  if (chainId !== MONAD.hex) {
     try {
-      await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x8f" }] });
+      await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: MONAD.hex }] });
     } catch (err) {
       const code = (err as { code?: number }).code;
       if (code === 4902) {
         await eth.request({
           method: "wallet_addEthereumChain",
           params: [{
-            chainId: "0x8f",
-            chainName: "Monad",
+            chainId: MONAD.hex,
+            chainName: MONAD.name,
             nativeCurrency: { name: "MON", symbol: "MON", decimals: 18 },
-            rpcUrls: ["https://rpc.monad.xyz"],
-            blockExplorerUrls: ["https://monadscan.com"],
+            rpcUrls: [MONAD.rpc],
+            blockExplorerUrls: [MONAD.explorer],
           }],
         });
       } else if (code === 4001) {
-        throw new Error("You rejected the Monad switch.");
+        throw new Error("You rejected the network switch.");
       } else {
         throw err;
       }
     }
     chainId = (await eth.request({ method: "eth_chainId" })) as string;
-    if (chainId !== "0x8f") throw new Error("Still not on Monad. Switch the network in your wallet.");
+    if (chainId !== MONAD.hex) throw new Error(`Still not on ${MONAD.name}. Switch the network in your wallet.`);
     accounts = (await eth.request({ method: "eth_accounts" })) as string[];
   }
   return accounts[0];

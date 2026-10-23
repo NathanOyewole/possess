@@ -1,11 +1,8 @@
-export const MONAD = {
-  id: 143,
-  hex: "0x8f",
-  name: "Monad",
-  rpc: "https://rpc.monad.xyz",
-  explorer: "https://monadscan.com",
-  symbol: "MON",
-};
+export const NETWORK = (process.env.NEXT_PUBLIC_NETWORK || "mainnet") as "mainnet" | "testnet";
+
+export const MONAD = NETWORK === "testnet"
+  ? { id: 10143, hex: "0x279f", name: "Monad Testnet", rpc: "https://testnet-rpc.monad.xyz", explorer: "https://testnet.monadscan.com", symbol: "MON" }
+  : { id: 143, hex: "0x8f", name: "Monad", rpc: "https://rpc.monad.xyz", explorer: "https://monadscan.com", symbol: "MON" };
 
 export const CHOG_NFT = "0xc96d31f8626c6d03fae5dcd3d61e3fb9f4a73763";
 export const CHOG_TOKEN = "0x350035555E10d9AfAF1566AaebfCeD5BA6C27777";
