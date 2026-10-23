@@ -4,6 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { CHOG_NFT, CHOG_TOKEN, MONAD, SUPPLY, RUN_MS, archetype, stats } from "@/lib/chain";
 import { chogBalance, connectMonad, ownerOf, short, tokenMeta } from "@/lib/eth";
 import { loadRuns, upsert, type Run } from "@/lib/runs";
+import {
+  POSSESS_ADDRESS,
+  readRun,
+  encodePossess,
+  encodeChallenge,
+  sendTx,
+  waitForReceipt,
+} from "@/lib/contract";
 
 export default function Page() {
   const [account, setAccount] = useState<string | null>(null);
@@ -12,10 +20,13 @@ export default function Page() {
   const [balance, setBalance] = useState("—");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [txStatus, setTxStatus] = useState<"idle" | "pending" | "success" | "failed">("idle");
+  const [txHash, setTxHash] = useState<string | null>(null);
   const [runs, setRuns] = useState<Run[]>([]);
   const [now, setNow] = useState(Date.now());
   const [demo, setDemo] = useState(false);
   const [meta, setMeta] = useState<{ name: string; image: string } | null>(null);
+  const [onChain, setOnChain] = useState(false);
 
   const id = Number(tokenId);
   const valid = Number.isInteger(id) && id >= 0 && id < SUPPLY;
@@ -36,8 +47,21 @@ export default function Page() {
     if (!valid) return;
     setOwner(null);
     setMeta(null);
+    setOnChain(false);
     ownerOf(CHOG_NFT, id).then(setOwner).catch((e) => setError(e.message));
     tokenMeta(CHOG_NFT, id).then(setMeta).catch(() => setMeta(null));
+    readRun(id).then((r) => {
+      if (r && r.startedAt > 0) {
+        setOnChain(true);
+        setRuns((prev) => {
+          const filtered = prev.filter((x) => x.tokenId !== id);
+          return [
+            { tokenId: id, owner: owner || "on-chain", startedAt: r.startedAt, heat: r.heat, alive: r.alive, scars: [] },
+            ...filtered,
+          ];
+        });
+      }
+    });
   }, [id, valid]);
 
   const clock = useMemo(() => {
@@ -60,31 +84,73 @@ export default function Page() {
     }
   }
 
-  function possess() {
+  async function possess() {
     if (!canPossess) return;
-    const who = account || "demo";
-    setRuns(upsert({
-      tokenId: id,
-      owner: owner || who,
-      startedAt: Date.now(),
-      heat: roll?.chaos ?? 50,
-      scars: [{ at: Date.now(), note: demo && !owns ? "demo possess" : "possessed", by: who }],
-      alive: true,
-    }));
+    setError("");
+    setBusy(true);
+    setTxStatus("pending");
+    setTxHash(null);
+    try {
+      const data = encodePossess(id);
+      const hash = await sendTx(data);
+      setTxHash(hash);
+      const ok = await waitForReceipt(hash);
+      if (!ok) throw new Error("Transaction failed");
+      const r = await readRun(id);
+      if (r && r.startedAt > 0) {
+        setOnChain(true);
+        const who = account || "demo";
+        setRuns(
+          upsert({
+            tokenId: id,
+            owner: owner || who,
+            startedAt: r.startedAt,
+            heat: r.heat,
+            alive: r.alive,
+            scars: [{ at: Date.now(), note: demo && !owns ? "demo possess" : "possessed", by: who }],
+          })
+        );
+      }
+      setTxStatus("success");
+    } catch (e) {
+      setTxStatus("failed");
+      setError(e instanceof Error ? e.message : "possess failed");
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function challenge() {
+  async function challenge() {
     if (!run?.alive || left <= 0) return;
-    const hit = Math.random() > 0.45;
-    setRuns(upsert({
-      ...run,
-      heat: Math.max(0, Math.min(100, run.heat + (hit ? 8 : -6))),
-      alive: hit || run.heat >= 30,
-      scars: [
-        { at: Date.now(), note: hit ? "took the hit, kept the body" : "slipped", by: account || "anon" },
-        ...run.scars,
-      ].slice(0, 6),
-    }));
+    setError("");
+    const hit = window.confirm("Strike now? (OK = hit, Cancel = miss)");
+    setBusy(true);
+    setTxStatus("pending");
+    setTxHash(null);
+    try {
+      const data = encodeChallenge(id, hit);
+      const hash = await sendTx(data);
+      setTxHash(hash);
+      const ok = await waitForReceipt(hash);
+      if (!ok) throw new Error("Transaction failed");
+      const r = await readRun(id);
+      if (r) {
+        setRuns(
+          upsert({
+            ...run,
+            heat: r.heat,
+            alive: r.alive,
+            scars: [{ at: Date.now(), note: hit ? "took the hit, kept the body" : "slipped", by: account || "anon" }, ...run.scars].slice(0, 6),
+          })
+        );
+      }
+      setTxStatus("success");
+    } catch (e) {
+      setTxStatus("failed");
+      setError(e instanceof Error ? e.message : "challenge failed");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -102,15 +168,15 @@ export default function Page() {
       </header>
 
       <section className="hero">
-        <p className="kicker">Chog Genesis · Monad</p>
+        <p className="kicker">Chog Genesis · Monad · on-chain state</p>
         <h1>The NFT is the save file.</h1>
-        <p className="lede">Token id seeds the body. Scars stick to that id. Sell it and the next owner inherits the run.</p>
+        <p className="lede">Token id seeds the body. Scars stick to that id on-chain. Sell it and the next owner inherits the run.</p>
       </section>
 
       <section className="steps">
         <div><b>1</b><span>Connect on Monad</span></div>
         <div><b>2</b><span>Type a Chog id you own</span></div>
-        <div><b>3</b><span>Possess starts the 24h run. Challenge writes a scar.</span></div>
+        <div><b>3</b><span>Possess starts the 24h run on-chain. Challenge writes a scar.</span></div>
       </section>
 
       <section className="stage">
@@ -128,28 +194,35 @@ export default function Page() {
           <div className="ownerline">
             <span>Owner</span>
             <b>{owner ? short(owner) : valid ? "reading…" : "—"}</b>
+            {onChain && <span className="onchain-badge">on-chain</span>}
           </div>
           <p className={owns ? "ok" : "lock"}>
-            {owns ? "You hold this body. Possess to start a 24h run." : demo ? "Demo only. Turn it off to see the real lock." : "You do not hold this body. Possess stays locked."}
+            {owns ? "You hold this body. Possess to start a 24h run on-chain." : demo ? "Demo only. Turn it off to see the real lock." : "You do not hold this body. Possess stays locked."}
           </p>
-          {run && <p className="clock">{run.alive && left > 0 ? `${clock} left · heat ${run.heat}` : "Run dead. A $CHOG revive comes next."}</p>}
+          {run && <p className="clock">{run.alive && left > 0 ? `${clock} left · heat ${run.heat}` : "Run dead. Revive with $CHOG coming next."}</p>}
           <div className="scars">
             {(run?.scars || []).map((s) => <div key={s.at}>{s.note}<span>{short(s.by)}</span></div>)}
           </div>
+          {txHash && (
+            <p className="tx">
+              tx: <a href={`https://monadscan.com/tx/${txHash}`} target="_blank" rel="noreferrer">{short(txHash)}</a> · {txStatus}
+            </p>
+          )}
         </article>
 
         <aside className="panel">
           <label>Token id</label>
           <input value={tokenId} inputMode="numeric" onChange={(e) => setTokenId(e.target.value.replace(/\D/g, "").slice(0, 4))} />
-          <button className="primary block" disabled={!canPossess} onClick={possess}>
-            {owns ? "Possess" : demo ? "Possess (demo)" : "Need this Chog"}
+          <button className="primary block" disabled={!canPossess || busy} onClick={possess}>
+            {busy && txStatus === "pending" ? "Mining…" : owns ? "Possess (on-chain)" : demo ? "Possess (demo)" : "Need this Chog"}
           </button>
-          <button className="block" disabled={!run?.alive || left <= 0} onClick={challenge}>Challenge</button>
+          <button className="block" disabled={!run?.alive || left <= 0 || busy} onClick={challenge}>Challenge</button>
           {error && <p className="err">{error}</p>}
-          <p className="hint">Type any id. The card loads that Chog. Possess only unlocks if you own it.</p>
+          <p className="hint">Type any id. The card loads that Chog. Possess only unlocks if you own it. State is written on-chain.</p>
           <div className="meta">
             <span>$CHOG {balance}</span>
             <span>{MONAD.name} {MONAD.id}</span>
+            <span>contract {short(POSSESS_ADDRESS)}</span>
           </div>
           <div className="board">
             {runs.length === 0 && <p className="empty">No runs yet.</p>}
@@ -165,3 +238,4 @@ export default function Page() {
     </main>
   );
 }
+
