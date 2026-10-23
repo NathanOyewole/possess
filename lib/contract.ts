@@ -1,5 +1,5 @@
 import { createPublicClient, http, encodeFunctionData, parseAbi } from "viem";
-import { MONAD, CHOG_NFT } from "./chain";
+import { MONAD } from "./chain";
 
 export const POSSESS_ADDRESS = (process.env.NEXT_PUBLIC_POSSESS_ADDRESS || "0x0000000000000000000000000000000000000000") as `0x${string}`;
 
@@ -7,6 +7,7 @@ const abi = parseAbi([
   "function ownerOf(uint256) view returns (address)",
   "function possess(uint256 tokenId)",
   "function challenge(uint256 tokenId, bool hit)",
+  "function revive(uint256 tokenId)",
   "function runs(uint256) view returns (uint64 startedAt, uint16 heat, bool alive)",
   "function scarCount(uint256) view returns (uint256)",
 ]);
@@ -50,6 +51,10 @@ export function encodePossess(tokenId: number) {
 
 export function encodeChallenge(tokenId: number, hit: boolean) {
   return encodeFunctionData({ abi, functionName: "challenge", args: [BigInt(tokenId), hit] });
+}
+
+export function encodeRevive(tokenId: number) {
+  return encodeFunctionData({ abi, functionName: "revive", args: [BigInt(tokenId)] });
 }
 
 export async function sendTx(data: `0x${string}`): Promise<string> {

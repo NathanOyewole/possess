@@ -9,6 +9,7 @@ import {
   readRun,
   encodePossess,
   encodeChallenge,
+  encodeRevive,
   sendTx,
   waitForReceipt,
 } from "@/lib/contract";
@@ -26,6 +27,9 @@ export default function Page() {
   const [now, setNow] = useState(Date.now());
   const [demo, setDemo] = useState(false);
   const [meta, setMeta] = useState<{ name: string; image: string } | null>(null);
+  const [striking, setStriking] = useState(false);
+  const [marker, setMarker] = useState(0);
+  const [strikeResult, setStrikeResult] = useState<"hit" | "miss" | null>(null);
   const [onChain, setOnChain] = useState(false);
 
   const id = Number(tokenId);
@@ -120,10 +124,30 @@ export default function Page() {
     }
   }
 
-  async function challenge() {
+  function openChallenge() {
     if (!run?.alive || left <= 0) return;
+    setStrikeResult(null);
+    setMarker(0);
+    setStriking(true);
+    const start = Date.now();
+    const duration = 2000;
+    const iv = setInterval(() => {
+      const t = (Date.now() - start) % duration;
+      setMarker(Math.round((t / duration) * 100));
+    }, 30);
+    // auto-miss after one full sweep
+    setTimeout(() => {
+      clearInterval(iv);
+      setStriking(false);
+      setStrikeResult("miss");
+      doChallenge(false);
+    }, duration);
+    // store interval id to clear on strike
+    (window as any).__strikeIv = iv;
+  }
+
+  async function doChallenge(hit: boolean) {
     setError("");
-    const hit = window.confirm("Strike now? (OK = hit, Cancel = miss)");
     setBusy(true);
     setTxStatus("pending");
     setTxHash(null);
@@ -137,10 +161,10 @@ export default function Page() {
       if (r) {
         setRuns(
           upsert({
-            ...run,
+            ...run!,
             heat: r.heat,
             alive: r.alive,
-            scars: [{ at: Date.now(), note: hit ? "took the hit, kept the body" : "slipped", by: account || "anon" }, ...run.scars].slice(0, 6),
+            scars: [{ at: Date.now(), note: hit ? "took the hit, kept the body" : "slipped", by: account || "anon" }, ...(run?.scars || [])].slice(0, 6),
           })
         );
       }
@@ -151,6 +175,48 @@ export default function Page() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function revive() {
+    if (!run || run.alive) return;
+    setError("");
+    setBusy(true);
+    setTxStatus("pending");
+    setTxHash(null);
+    try {
+      const data = encodeRevive(id);
+      const hash = await sendTx(data);
+      setTxHash(hash);
+      const ok = await waitForReceipt(hash);
+      if (!ok) throw new Error("Transaction failed");
+      const r = await readRun(id);
+      if (r) {
+        setRuns(
+          upsert({
+            ...run,
+            startedAt: r.startedAt,
+            heat: r.heat,
+            alive: r.alive,
+            scars: [{ at: Date.now(), note: "revived", by: account || "anon" }, ...run.scars].slice(0, 6),
+          })
+        );
+      }
+      setTxStatus("success");
+    } catch (e) {
+      setTxStatus("failed");
+      setError(e instanceof Error ? e.message : "revive failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function strike() {
+    const iv = (window as any).__strikeIv;
+    if (iv) clearInterval(iv);
+    const hit = marker >= 35 && marker <= 65;
+    setStrikeResult(hit ? "hit" : "miss");
+    setStriking(false);
+    doChallenge(hit);
   }
 
   return (
@@ -216,7 +282,19 @@ export default function Page() {
           <button className="primary block" disabled={!canPossess || busy} onClick={possess}>
             {busy && txStatus === "pending" ? "Mining…" : owns ? "Possess (on-chain)" : demo ? "Possess (demo)" : "Need this Chog"}
           </button>
-          <button className="block" disabled={!run?.alive || left <= 0 || busy} onClick={challenge}>Challenge</button>
+          <button className="block" disabled={!run?.alive || left <= 0 || busy} onClick={openChallenge}>Challenge (strike)</button>
+          {!run?.alive && run && <button className="primary block" disabled={busy} onClick={revive}>Revive with $CHOG</button>}
+          {striking && (
+            <div className="strike-overlay">
+              <div className="strike-bar">
+                <div className="strike-zone" />
+                <div className="strike-marker" style={{ left: `${marker}%` }} />
+              </div>
+              <button className="primary block" onClick={strike}>STRIKE</button>
+              <p className="hint">Hit the green zone (35–65%).</p>
+            </div>
+          )}
+          {strikeResult && !striking && <p className={strikeResult === "hit" ? "ok" : "lock"}>{strikeResult === "hit" ? "Hit! Heat +8" : "Miss. Heat -6"}</p>}
           {error && <p className="err">{error}</p>}
           <p className="hint">Type any id. The card loads that Chog. Possess only unlocks if you own it. State is written on-chain.</p>
           <div className="meta">

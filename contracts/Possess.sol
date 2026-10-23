@@ -63,6 +63,15 @@ contract Possess {
         emit Challenged(tokenId, msg.sender, hit, r.heat);
     }
 
+    function revive(uint256 tokenId) external onlyOwner(tokenId) {
+        RunState storage r = runs[tokenId];
+        require(!r.alive, "still alive");
+        r.startedAt = uint64(block.timestamp);
+        r.heat = 30;
+        r.alive = true;
+        scars[tokenId].push(Scar(msg.sender, uint64(block.timestamp), "revived"));
+        emit Possessed(tokenId, msg.sender);
+    }
     function scarCount(uint256 tokenId) external view returns (uint256) {
         return scars[tokenId].length;
     }
